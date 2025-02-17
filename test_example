@@ -1,0 +1,295 @@
+import random
+import requests
+import time
+import numpy as np
+import streamlit as st
+import pandas as pd
+
+def convert_labels_to_symbols(predicted_labels):
+    """
+    Convert a list of predicted labels to their corresponding symbols.
+
+    Parameters:
+    - predicted_labels: List of integer labels.
+
+    Returns:
+    A list of corresponding symbols.
+    """
+    # Mapping of label indices to symbols
+    label_to_symbol = {
+        0: 'normal🟢',
+        1: 'increase🔴',
+        2: 'decrease🔴',
+        3: 'jump🟠',
+        4: 'drop🟠',
+        5: 'vibration🟡',
+        6: 'peak🟡',
+        7: 'valley🟡',
+        8: 'straight🟡',
+    }
+
+    # Convert labels to symbols using the mapping
+    predicted_symbols = [label_to_symbol.get(label, 'unknown') for label in predicted_labels]
+
+    return predicted_symbols
+
+
+def min_max_scaler(lst):
+    # Check if the list is empty
+    if not lst:
+        return []
+
+        # Find the minimum and maximum values in the list
+    min_val = min(lst)
+    max_val = max(lst)
+
+    # Handle the case where all values in the list are the same
+    if min_val == max_val:
+        return [0.5] * len(lst)  # or return [0] * len(lst) or [1] * len(lst) based on your requirement
+
+    # Apply min-max scaling
+    scaled_lst = [round((x - min_val) / (max_val - min_val),4) for x in lst]
+    return scaled_lst
+
+
+def get_prediction_from_api(features, api_url="http://localhost:8508/predict?confidence_threshold=95.0"):
+    # Set up the payload data as a dictionary
+    data = {
+        "features": features
+    }
+
+    try:
+        # Make the POST request to the API
+        response = requests.post(api_url, json=data)
+
+        # Check if the POST request was successful
+        response.raise_for_status()
+
+        # Parse the JSON response
+        prediction_result = response.json()
+
+
+        # Return the prediction result
+        return prediction_result
+
+    except requests.exceptions.HTTPError as err:
+        print(f"HTTP error occurred: {err}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
+def predict_function(input_data_list):
+    # normalize the x_list_name use max min normalization
+    after_scaled_y_list = min_max_scaler(input_data_list)
+
+    # after_scaled_y_list = general_functions.z_score_scaler(input_data_list)
+
+    # send the after scaled y list to the model api to predict the label
+    predict_result = get_prediction_from_api(after_scaled_y_list)
+    return predict_result
+
+
+
+def generate_trend_lines(num_lines, num_points=61, start_range=(0, 0.2), end_range=(0.8, 1),
+                         vibration_amplitude_range=(0.01, 0.05)):
+    trend_lines = []
+    for _ in range(num_lines):
+        # Randomly select start and end points within specified ranges
+        start = np.random.uniform(*start_range)
+        end = np.random.uniform(*end_range)
+
+        # Calculate the slope needed to reach from start to end within the specified number of points
+        slope = (end - start) / (num_points - 1)
+
+        # Random vibration amplitude for each line
+        vibration_amplitude = np.random.uniform(*vibration_amplitude_range)
+
+        # Generate the trend line
+        linear_trend = start + slope * np.arange(num_points)
+        line = linear_trend + np.random.normal(scale=vibration_amplitude, size=num_points)
+
+        # Ensure values are within the [0, 1] range
+        line = np.clip(line, 0, 1)
+        trend_lines.append(line)
+
+
+    return trend_lines
+
+
+if __name__ == '__main__':
+    st.title("Random List and Predicted Label Visualization")
+    empty_container = st.empty()
+
+
+    straight=[0.56625464, 0.56625464, 0.56625464, 0.56625464, 0.56625464,
+       0.56625464, 0.56625464, 0.56625464, 0.56625464, 0.56625464,
+       0.56625464, 0.56625464, 0.56625464, 0.56625464, 0.56625464,
+       0.56625464, 0.56625464, 0.56625464, 0.56625464, 0.56625464,
+       0.56625464, 0.56625464, 0.56625464, 0.56625464, 0.56625464,
+       0.56625464, 0.56625464, 0.56625464, 0.56625464, 0.56625464,
+       0.56625464, 0.56625464, 0.56625464, 0.56625464, 0.56625464,
+       0.56625464, 0.56625464, 0.56625464, 0.56625464, 0.56625464,
+       0.56625464, 0.56625464, 0.56625464, 0.56625464, 0.56625464,
+       0.56625464, 0.56625464, 0.56625464, 0.56625464, 0.56625464,
+       0.56625464, 0.56625464, 0.56625464, 0.56625464, 0.56625464,
+       0.56625464, 0.56625464, 0.56625464, 0.56625464, 0.56625464,
+       0.56625464]
+
+    normal_vibration=[1.        , 0.46026817, 0.        , 0.48909249, 0.        ,
+       0.69860446, 0.89693359, 0.66957012, 1.        , 0.65126447,
+       0.91015035, 1.        , 0.47937505, 1.        , 0.30026338,
+       1.        , 0.45090976, 0.80066246, 0.91685601, 0.        ,
+       1.        , 0.        , 0.66570516, 0.        , 0.66993648,
+       0.36174419, 1.        , 1.        , 0.        , 1.        ,
+       0.80364939, 0.44149111, 0.45231018, 0.4914287 , 0.44121543,
+       0.        , 0.23011212, 1.        , 0.41906363, 1.        ,
+       0.22343653, 0.16539408, 0.        , 1.        , 1.        ,
+       0.24471986, 0.77005632, 0.06806561, 1.        , 0.        ,
+       1.        , 0.88154847, 0.22635618, 0.        , 1.        ,
+       0.84224112, 1.        , 1.        , 1.        , 1.        ,
+       0.40331297]
+
+    up_trend=[0.10134686, 0.13272306, 0.12300591, 0.14362222, 0.14057763,
+       0.16482781, 0.17299852, 0.20792486, 0.23005822, 0.22061859,
+       0.22211764, 0.26616328, 0.29766894, 0.32604979, 0.25532502,
+       0.28586092, 0.31736055, 0.36209769, 0.31502354, 0.34153563,
+       0.30971574, 0.37325722, 0.40087038, 0.44272501, 0.451133  ,
+       0.42278926, 0.46834224, 0.4339116 , 0.48067225, 0.49567778,
+       0.48969982, 0.52635134, 0.53120696, 0.54800477, 0.56455557,
+       0.54210475, 0.56728691, 0.58941648, 0.62782471, 0.61251784,
+       0.6393384 , 0.6264262 , 0.64906137, 0.7004068 , 0.69725728,
+       0.7206286 , 0.70850134, 0.72188046, 0.74546848, 0.73487447,
+       0.75503484, 0.79945429, 0.81167067, 0.80001872, 0.84571333,
+       0.83563394, 0.87080318, 0.86446677, 0.8650937 , 0.92452482,
+       0.89891366]
+
+    down_trend=[0.88651016, 0.84176986, 0.83385211, 0.8003371 , 0.85857838,
+       0.77563905, 0.7757782 , 0.76431935, 0.73321888, 0.72668248,
+       0.77483659, 0.71874863, 0.71454059, 0.67352332, 0.6934072 ,
+       0.71552258, 0.6967049 , 0.69715424, 0.69385316, 0.64838326,
+       0.65178587, 0.60500845, 0.58378751, 0.57197841, 0.59852169,
+       0.59195972, 0.5791631 , 0.57854034, 0.54672461, 0.54524325,
+       0.49529289, 0.4756875 , 0.49167588, 0.44885072, 0.45615103,
+       0.44184923, 0.52286108, 0.40501789, 0.4051717 , 0.43441198,
+       0.42172454, 0.36191355, 0.37754308, 0.35286636, 0.38073044,
+       0.34294814, 0.31266428, 0.32483579, 0.35356268, 0.28186854,
+       0.32336109, 0.25515706, 0.27036955, 0.19935805, 0.29568557,
+       0.17860425, 0.2364489 , 0.2042397 , 0.2508587 , 0.21601113,
+       0.22309689]
+
+
+    peak=[0.10962084, 0.10291559, 0.06565719, 0.11210004, 0.00495494,
+       0.10047382, 0.0890225 , 0.08276337, 0.05675905, 0.10785212,
+       0.10858558, 0.11802873, 0.05826497, 0.09130326, 0.0899244 ,
+       0.06280342, 0.11893071, 0.14051435, 0.10453095, 0.11597975,
+       0.05140996, 0.06581156, 0.0634954 , 0.09528925, 0.13102215,
+       0.12366438, 0.07170104, 0.07976937, 0.08738925, 0.10075861,
+       0.10114333, 0.16211396, 0.11394549, 0.15691705, 0.10384819,
+       0.15340652, 0.08892556, 0.11072096, 0.98985378, 1.        ,
+       1.        , 1.        , 1.        , 1.        , 1.        ,
+       1.        , 1.        , 0.07116737, 0.01250742, 0.08200767,
+       0.11274597, 0.08999742, 0.08054912, 0.13477054, 0.10668667,
+       0.06176079, 0.09374587, 0.12062134, 0.1130988 , 0.12000217,
+       0.07561588]
+
+    valley=[0.88286495, 0.9339187 , 0.97117592, 0.98387911, 0.96286934,
+       0.98079064, 1.        , 0.93410735, 0.95341736, 0.98761403,
+       0.90883976, 0.96292589, 0.95898797, 1.        , 0.96565803,
+       0.90602167, 0.89886175, 1.        , 1.        , 1.        ,
+       1.        , 1.        , 1.        , 0.94158582, 0.9204238 ,
+       1.        , 0.0592668 , 0.01010008, 0.        , 1.        ,
+       0.9300018 , 0.9901823 , 0.99837224, 0.97628109, 0.95654511,
+       0.99114632, 0.92821353, 0.92142184, 1.        , 0.9605754 ,
+       0.9586579 , 0.97962678, 0.92339499, 1.        , 0.97378158,
+       1.        , 0.89488104, 1.        , 0.96663449, 1.        ,
+       0.91999853, 0.96762317, 0.9746452 , 0.9616909 , 0.91629375,
+       0.89916199, 0.93904019, 0.92693143, 0.97407054, 1.        ,
+       0.90562071]
+
+
+    jump=[0.0956394 , 0.09994976, 0.08052848, 0.04839056, 0.07736293,
+       0.05369531, 0.04167429, 0.07357225, 0.05605186, 0.09275243,
+       0.09154074, 0.10087758, 0.06216779, 0.0772427 , 0.0539182 ,
+       0.08622191, 0.07020375, 0.08836569, 0.07532958, 0.07437212,
+       0.07626293, 0.0655062 , 0.04602914, 0.07663135, 1.        ,
+       1.        , 1.        , 1.        , 0.99767551, 0.98343573,
+       0.98682471, 1.        , 1.        , 1.        , 1.        ,
+       1.        , 0.99337806, 1.        , 1.        , 1.        ,
+       1.        , 1.        , 1.        , 1.        , 1.        ,
+       1.        , 1.        , 1.        , 1.        , 1.        ,
+       1.        , 1.        , 1.        , 1.        , 1.        ,
+       1.        , 1.        , 1.        , 0.99956294, 0.99597832,
+       0.98381576]
+
+    drop=[0.99131388, 0.95123963, 0.99258623, 0.94151383, 0.96686018,
+       0.98689654, 0.97180576, 0.94630433, 0.95907739, 0.94390097,
+       0.94335339, 0.97975554, 0.98361752, 0.95962677, 0.90198304,
+       0.96864749, 0.96307046, 0.9782639 , 0.94587551, 0.96996478,
+       0.        , 0.01799103, 0.        , 0.        , 0.        ,
+       0.        , 0.01204315, 0.        , 0.        , 0.        ,
+       0.        , 0.00656762, 0.        , 0.        , 0.        ,
+       0.00755216, 0.        , 0.        , 0.        , 0.00271342,
+       0.        , 0.01102177, 0.        , 0.        , 0.        ,
+       0.        , 0.        , 0.00154396, 0.        , 0.        ,
+       0.        , 0.00985676, 0.        , 0.02135994, 0.        ,
+       0.        , 0.        , 0.        , 0.        , 0.        ,
+       0.        ]
+
+
+    vibration=[0.50576289, 0.49664568, 0.55750177, 0.60563867, 0.53295801,
+       0.52293544, 0.56072207, 0.51512417, 0.52100875, 0.52956996,
+       0.59724308, 0.54346452, 0.51305563, 0.58567102, 0.56125074,
+       0.49905441, 0.53196375, 0.54066557, 0.50454173, 0.52186521,
+       0.54280028, 0.60723087, 0.54841902, 0.50695381, 0.56294333,
+       0.54587606, 0.50340213, 0.55640907, 0.58708433, 0.55816036,
+       0.54045563, 0.54501133, 0.53139562, 0.54162116, 0.54151265,
+       0.54711779, 0.54086413, 0.54209619, 0.58586964, 0.38772397,
+       0.        , 1.        , 1.        , 0.41110762, 0.        ,
+       1.        , 0.05703233, 0.48068926, 0.70931627, 0.44648584,
+       0.52836574, 0.48278266, 0.55553146, 0.57661847, 0.50204754,
+       0.54883194, 0.53149902, 0.52385099, 0.4494549 , 0.5302617 ,
+       0.52537694]
+
+
+    list_of_trend_lines=[]
+    list_of_trend_lines.append(straight)
+    list_of_trend_lines.append(normal_vibration)
+    list_of_trend_lines.append(up_trend)
+    list_of_trend_lines.append(down_trend)
+    list_of_trend_lines.append(peak)
+    list_of_trend_lines.append(valley)
+    list_of_trend_lines.append(jump)
+    list_of_trend_lines.append(drop)
+    list_of_trend_lines.append(vibration)
+
+
+    while True:
+        # Generate the random list
+        random_list = random.choice(list_of_trend_lines)
+
+        # Use the predict_function to get the prediction result
+        predict_result = predict_function(random_list)
+
+        # Extract the predicted label from the result
+        predicted_label = predict_result["predicted_label"]
+
+        predicted_symbles=convert_labels_to_symbols([predicted_label])
+
+
+        # Create a DataFrame for the random list
+        df = pd.DataFrame({'Index': range(61), 'Value': random_list})
+
+        # Clear the placeholder container
+        empty_container.empty()
+
+        with empty_container.container():
+            # Display the line chart using Streamlit
+            st.line_chart(df.set_index('Index'))
+
+            # Display the predicted label in the app
+            st.write(f"# **Predicted Label:** `{predicted_symbles}`")
+
+            # Add some pause for better user experience
+            st.write("Generating new data in 1 seconds...")
+            time.sleep(1)  # Sleep for 2 seconds before generating the next set
+
