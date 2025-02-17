@@ -1,0 +1,64 @@
+from fastapi import FastAPI, Query
+from pydantic import BaseModel
+import torch
+import torch.nn as nn
+import time
+from train_classification_model import SimpleNN
+
+# Define a request model
+class PredictionRequest(BaseModel):
+    features: list
+
+# Load the model once so you don't repeat this during every request
+model_path = 'trained_model.pth'
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model = torch.load(model_path, map_location=device)
+model.eval()
+
+# Initialize FastAPI
+app = FastAPI()
+
+def predict(features, confidence_threshold=50.0):
+    # Convert features to tensor
+    new_data_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0)  # Add batch dimension
+    new_data_tensor = new_data_tensor.to(device)
+
+    # Start timing
+    start_time = time.time()
+
+    # Perform the prediction
+    with torch.no_grad():
+        outputs = model(new_data_tensor)
+        probabilities = nn.functional.softmax(outputs, dim=1)
+        max_prob, predicted_label = torch.max(probabilities, 1)
+
+    # End timing
+    end_time = time.time()
+    prediction_time = end_time - start_time
+
+    # Extract the predicted label and confidence
+    predicted_label = predicted_label.cpu().item()
+    confidence_percentage = max_prob.cpu().item() * 100  # Convert probability to percentage
+
+    # Check against the confidence threshold
+    result = {
+        "predicted_label": predicted_label if confidence_percentage >= confidence_threshold else 0,
+        "confidence": confidence_percentage,
+        "prediction_time": prediction_time
+    }
+
+    # if confidence_percentage < confidence_threshold:
+    #     result["note"] = "Prediction confidence below threshold. Result may not be reliable."
+
+    return result
+
+# Define the API route
+@app.post("/predict")
+async def get_prediction(request: PredictionRequest, confidence_threshold: float = Query(50.0)):
+    prediction = predict(request.features, confidence_threshold=confidence_threshold)
+    return prediction
+
+# If running directly, start the server using uvicorn
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8508)
