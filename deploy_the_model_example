@@ -3,11 +3,34 @@ from pydantic import BaseModel
 import torch
 import torch.nn as nn
 import time
-from train_classification_model import SimpleNN
+
+
+class SimpleNN(nn.Module):
+    def __init__(self, input_size, num_classes):
+        super(SimpleNN, self).__init__()
+        self.fc1 = nn.Linear(input_size, 128)
+        self.fc2 = nn.Linear(128, 512)
+        self.fc3 = nn.Linear(512, 1024)
+        self.fc4 = nn.Linear(1024, 1024)
+        self.fc5 = nn.Linear(1024, 512)
+        self.fc6 = nn.Linear(512, 128)
+        self.fc7 = nn.Linear(128, num_classes)
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = torch.relu(self.fc3(x))
+        x = torch.relu(self.fc4(x))
+        x = torch.relu(self.fc5(x))
+        x = torch.relu(self.fc6(x))
+        x = self.fc7(x)
+        return x
+
 
 # Define a request model
 class PredictionRequest(BaseModel):
     features: list
+
 
 # Load the model once so you don't repeat this during every request
 model_path = 'trained_model.pth'
@@ -17,6 +40,7 @@ model.eval()
 
 # Initialize FastAPI
 app = FastAPI()
+
 
 def predict(features, confidence_threshold=50.0):
     # Convert features to tensor
@@ -51,6 +75,7 @@ def predict(features, confidence_threshold=50.0):
     #     result["note"] = "Prediction confidence below threshold. Result may not be reliable."
 
     return result
+
 
 # Define the API route
 @app.post("/predict")
