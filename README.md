@@ -1,4 +1,4 @@
-# trend_identify_AI_model
+# line detection model
 An AI model that can identify data trend
 ![2025-02-17_12-41-58](https://github.com/user-attachments/assets/a7e10242-4653-437c-856d-79b2442c078c)
 # model introduction
@@ -20,19 +20,10 @@ this model can detect some trend automatically, with out any data preparations, 
 5. after loaded the model, it runs as a service, and then you can call it with any request, because it was developed using FastAPI, I also provided the calling example
 6. open the test_example, and run it, and you will see the figs from your web browser
 
-::: info
-before you can run this, you should install the dependencies
+> **Important:**
+> Before running, you should install the dependencies. I didn't freeze them as there are only a few, and I'll do it later.
 
-i didn't freeze them, because it just has a little dependencies, i will do this later
-
-:::
-
-::: info
-assume that you have a GPU with your computer, but it doesn't meter weather you have or not
-
-if you have, this model will be loaded into GPU memory, less than 1 gb
-
-:::
+> * Assuming a GPU is present, the model will be loaded into GPU memory, which is less than 1 GB.
 
 # concept & and future usage
 
